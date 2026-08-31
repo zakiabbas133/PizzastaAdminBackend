@@ -5,8 +5,16 @@ namespace PizzastaAdminBackend.Models
     public class WebsiteSettings
     {
         public Guid Id { get; set; }
+
         [MaxLength(1000)]
         public string Logo { get; set; } = string.Empty;
+
+        [MaxLength(5000)]
+        public string SliderImages { get; set; } = string.Empty;
+
+        [MaxLength(1000)]
+        public string Video { get; set; } = string.Empty;
+
         [Required]
         [MaxLength(200)]
         public string FacebookUrl { get; set; } = string.Empty;

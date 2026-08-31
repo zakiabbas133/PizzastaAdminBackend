@@ -5,9 +5,24 @@ namespace PizzastaAdminBackend.Models
     public class WebsiteSettingsDto
     {
         public Guid Id { get; set; }
+
         [MaxLength(1000)]
         public string Logo { get; set; } = string.Empty;
+
         public IFormFile? LogoFile { get; set; }
+
+        // Multiple slider images
+        public List<IFormFile>? SliderImageFiles { get; set; }
+
+        // Existing slider images that should remain
+        public string SliderImages { get; set; } = string.Empty;
+
+        [MaxLength(1000)]
+        public string Video { get; set; } = string.Empty;
+
+        public IFormFile? VideoFile { get; set; }
+
+        public bool RemoveVideo { get; set; }
 
         [Required]
         [MaxLength(200)]

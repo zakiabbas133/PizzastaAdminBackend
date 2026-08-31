@@ -15,11 +15,13 @@ namespace PizzastaAdminBackend.Models
         public string Slug { get; set; } = string.Empty;
 
         [Required]
-        [MaxLength(2000)]
+        [MaxLength(500)]
         public string Description { get; set; } = string.Empty;
 
         [MaxLength(1000)]
         public string? Image { get; set; }
+
+        public int Price { get; set; }
 
         public bool Featured { get; set; }
 
