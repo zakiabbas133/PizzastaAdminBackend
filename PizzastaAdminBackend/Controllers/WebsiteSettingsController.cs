@@ -6,7 +6,6 @@ using PizzastaAdminBackend.Models;
 
 namespace PizzastaAdminBackend.Controllers
 {
-    [Authorize]
     public class WebsiteSettingsController : Controller
     {
         private readonly ApplicationDbContext _context;

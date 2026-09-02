@@ -229,6 +229,7 @@ namespace PizzastaAdminBackend.Controllers
                 });
             }
         }
+        
         [Authorize]
         public IActionResult Logout()
         {
@@ -244,8 +245,7 @@ namespace PizzastaAdminBackend.Controllers
         // GENERATE JWT
         // =========================================================
 
-        private async Task<JwtTokenResult> GenerateJwtToken(
-            ApplicationUser user)
+        private async Task<JwtTokenResult> GenerateJwtToken(ApplicationUser user)
         {
             var jwtKey = _configuration["Jwt:Key"]
                 ?? throw new InvalidOperationException(
