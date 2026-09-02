@@ -91,7 +91,6 @@ namespace PizzastaAdminBackend.Data
             modelBuilder.Entity<DealItem>()
                 .HasOne(x => x.MenuItemVariant)
                 .WithMany()
-                .HasForeignKey(x => x.MenuItemVariantId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // ============================================

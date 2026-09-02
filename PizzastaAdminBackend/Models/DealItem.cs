@@ -14,9 +14,6 @@ namespace PizzastaAdminBackend.Models
 
         public int Quantity { get; set; } = 1;
 
-        // Optional variant, e.g. "Large", "XL", "Pitcher"
-        public Guid? MenuItemVariantId { get; set; }
-
         public int DisplayOrder { get; set; }
 
         // Relationships

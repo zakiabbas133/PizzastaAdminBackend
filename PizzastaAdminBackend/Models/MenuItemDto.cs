@@ -35,7 +35,8 @@ namespace PizzastaAdminBackend.DTOs.MenuItems
 
     public class MenuItemVariantDto
     {
-        public Guid Id { get; set; }
+        // Make Id nullable so empty form values bind to null instead of causing model binding errors
+        public Guid? Id { get; set; }
 
         [Required]
         public string Name { get; set; } = string.Empty;

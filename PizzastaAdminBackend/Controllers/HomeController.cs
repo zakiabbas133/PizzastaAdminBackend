@@ -9,13 +9,13 @@ namespace PizzastaAdminBackend.Controllers
         [HttpGet(Name = "home")]
         public IActionResult Index()
         {
-            return Json(null);
+            return Json("App working " + DateTime.Now.ToLocalTime());
         }
 
         [HttpGet(Name = "privacy")]
         public IActionResult Privacy()
         {
-            return Json(null);
+            return Json("App working" + DateTime.Now.ToFileTimeUtc());
         }
 
         [HttpGet(Name = "error")]

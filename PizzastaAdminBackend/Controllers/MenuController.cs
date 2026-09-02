@@ -312,7 +312,9 @@ namespace PizzastaAdminBackend.Controllers
         }
 
         [HttpPut]
-        public async Task<IActionResult> UpdateMenuItem(Guid id, [FromForm] MenuItemDto dto)
+        public async Task<IActionResult> UpdateMenuItem(
+    Guid id,
+    [FromForm] MenuItemDto dto)
         {
             if (!ModelState.IsValid)
             {
@@ -333,226 +335,438 @@ namespace PizzastaAdminBackend.Controllers
 
             try
             {
-                var menuItem = await _context.MenuItems
-                    .Include(x => x.Variants)
-                    .FirstOrDefaultAsync(x => x.Id == id);
+                // ========================================================
+                // SQL SERVER EXECUTION STRATEGY
+                // ========================================================
 
-                if (menuItem == null)
+                var strategy = _context.Database.CreateExecutionStrategy();
+
+                IActionResult? result = null;
+
+                await strategy.ExecuteAsync(async () =>
                 {
-                    return NotFound(new
+                    await using var transaction =
+                        await _context.Database.BeginTransactionAsync();
+
+                    try
                     {
-                        success = false,
-                        message = "Menu item not found."
-                    });
-                }
+                        // ========================================================
+                        // GET MENU ITEM
+                        // ========================================================
 
-                // ========================================================
-                // Check category
-                // ========================================================
+                        var menuItem = await _context.MenuItems
+                            .FirstOrDefaultAsync(x => x.Id == id);
 
-                var categoryExists = await _context.Categories
-                    .AnyAsync(x => x.Id == dto.CategoryId);
-
-                if (!categoryExists)
-                {
-                    return BadRequest(new
-                    {
-                        success = false,
-                        message = "Selected category does not exist."
-                    });
-                }
-
-                // ========================================================
-                // Check duplicate slug
-                // ========================================================
-
-                var slug = dto.Slug.Trim();
-
-                var slugExists = await _context.MenuItems
-                    .AnyAsync(x =>
-                        x.Slug == slug &&
-                        x.Id != id);
-
-                if (slugExists)
-                {
-                    return BadRequest(new
-                    {
-                        success = false,
-                        message = "A menu item with this slug already exists."
-                    });
-                }
-
-                // ========================================================
-                // Update menu item
-                // ========================================================
-
-                menuItem.Name = dto.Name.Trim();
-                menuItem.Slug = slug;
-                menuItem.Description = dto.Description?.Trim() ?? string.Empty;
-                menuItem.Price = dto.Price;
-                menuItem.Featured = dto.Featured;
-                menuItem.Popular = dto.Popular;
-                menuItem.IsActive = dto.IsActive;
-                menuItem.DisplayOrder = dto.DisplayOrder;
-                menuItem.CategoryId = dto.CategoryId;
-
-                // ========================================================
-                // Handle image
-                // ========================================================
-
-                if (dto.ImageFile != null && dto.ImageFile.Length > 0)
-                {
-                    var uploadsFolder = Path.Combine(
-                        _environment.WebRootPath,
-                        "uploads",
-                        "menu"
-                    );
-
-                    if (!Directory.Exists(uploadsFolder))
-                    {
-                        Directory.CreateDirectory(uploadsFolder);
-                    }
-
-                    // ----------------------------------------------------
-                    // Delete old image
-                    // ----------------------------------------------------
-
-                    if (!string.IsNullOrWhiteSpace(menuItem.Image))
-                    {
-                        var oldImagePath = menuItem.Image
-                            .Replace(
-                                "/",
-                                Path.DirectorySeparatorChar.ToString()
-                            )
-                            .TrimStart(
-                                Path.DirectorySeparatorChar
-                            );
-
-                        var fullOldImagePath = Path.Combine(
-                            _environment.WebRootPath,
-                            oldImagePath
-                        );
-
-                        if (System.IO.File.Exists(fullOldImagePath))
+                        if (menuItem == null)
                         {
-                            System.IO.File.Delete(fullOldImagePath);
+                            result = NotFound(new
+                            {
+                                success = false,
+                                message = "Menu item not found."
+                            });
+
+                            await transaction.RollbackAsync();
+                            return;
                         }
-                    }
 
-                    // ----------------------------------------------------
-                    // Save new image
-                    // ----------------------------------------------------
+                        // ========================================================
+                        // CHECK CATEGORY
+                        // ========================================================
 
-                    var extension = Path.GetExtension(
-                        dto.ImageFile.FileName
-                    );
+                        var categoryExists = await _context.Categories
+                            .AnyAsync(x => x.Id == dto.CategoryId);
 
-                    var fileName =
-                        $"{Guid.NewGuid()}{extension}";
-
-                    var newFilePath = Path.Combine(
-                        uploadsFolder,
-                        fileName
-                    );
-
-                    await using var stream = new FileStream(
-                        newFilePath,
-                        FileMode.Create
-                    );
-
-                    await dto.ImageFile.CopyToAsync(stream);
-
-                    // ----------------------------------------------------
-                    // Update database image path
-                    // ----------------------------------------------------
-
-                    menuItem.Image =
-                        $"/uploads/menu/{fileName}";
-                }
-
-                // ========================================================
-                // Handle variants
-                // ========================================================
-
-                var incomingVariantIds = dto.Variants
-                    .Where(x => x.Id != Guid.Empty)
-                    .Select(x => x.Id)
-                    .ToHashSet();
-
-                // --------------------------------------------------------
-                // Delete variants removed from request
-                // --------------------------------------------------------
-
-                var variantsToDelete = menuItem.Variants
-                    .Where(x => !incomingVariantIds.Contains(x.Id))
-                    .ToList();
-
-                foreach (var variant in variantsToDelete)
-                {
-                    _context.MenuItemVariants.Remove(variant);
-                }
-
-                // --------------------------------------------------------
-                // Update existing / create new variants
-                // --------------------------------------------------------
-
-                foreach (var variantDto in dto.Variants)
-                {
-                    if (variantDto.Id != Guid.Empty)
-                    {
-                        var existingVariant = menuItem.Variants
-                            .FirstOrDefault(x => x.Id == variantDto.Id);
-
-                        if (existingVariant == null)
+                        if (!categoryExists)
                         {
-                            return BadRequest(new
+                            result = BadRequest(new
+                            {
+                                success = false,
+                                message = "Selected category does not exist."
+                            });
+
+                            await transaction.RollbackAsync();
+                            return;
+                        }
+
+                        // ========================================================
+                        // CHECK DUPLICATE SLUG
+                        // ========================================================
+
+                        var slug = dto.Slug.Trim();
+
+                        var slugExists = await _context.MenuItems
+                            .AnyAsync(x =>
+                                x.Slug == slug &&
+                                x.Id != id);
+
+                        if (slugExists)
+                        {
+                            result = BadRequest(new
                             {
                                 success = false,
                                 message =
-                                    "One of the selected variants does not belong to this menu item."
+                                    "A menu item with this slug already exists."
                             });
+
+                            await transaction.RollbackAsync();
+                            return;
                         }
 
-                        existingVariant.Name =
-                            variantDto.Name.Trim();
+                        // ========================================================
+                        // UPDATE MENU ITEM
+                        // ========================================================
 
-                        existingVariant.Price =
-                            variantDto.Price;
+                        menuItem.Name = dto.Name.Trim();
+                        menuItem.Slug = slug;
+                        menuItem.Description =
+                            dto.Description?.Trim() ?? string.Empty;
 
-                        existingVariant.DisplayOrder =
-                            variantDto.DisplayOrder;
+                        menuItem.Price = dto.Price;
+                        menuItem.Featured = dto.Featured;
+                        menuItem.Popular = dto.Popular;
+                        menuItem.IsActive = dto.IsActive;
+                        menuItem.DisplayOrder = dto.DisplayOrder;
+                        menuItem.CategoryId = dto.CategoryId;
 
-                        existingVariant.IsActive =
-                            variantDto.IsActive;
-                    }
-                    else
-                    {
-                        var newVariant = new MenuItemVariant
+                        // ========================================================
+                        // HANDLE IMAGE
+                        // ========================================================
+
+                        if (dto.ImageFile != null &&
+                            dto.ImageFile.Length > 0)
                         {
-                            Id = Guid.NewGuid(),
+                            var uploadsFolder = Path.Combine(
+                                _environment.WebRootPath,
+                                "uploads",
+                                "menu"
+                            );
 
-                            Name = variantDto.Name.Trim(),
-                            Price = variantDto.Price,
-                            DisplayOrder = variantDto.DisplayOrder,
-                            IsActive = variantDto.IsActive,
+                            if (!Directory.Exists(uploadsFolder))
+                            {
+                                Directory.CreateDirectory(uploadsFolder);
+                            }
 
-                            MenuItemId = menuItem.Id
-                        };
+                            // ----------------------------------------------------
+                            // DELETE OLD IMAGE
+                            // ----------------------------------------------------
 
-                        menuItem.Variants.Add(newVariant);
+                            if (!string.IsNullOrWhiteSpace(menuItem.Image))
+                            {
+                                var oldImagePath = menuItem.Image
+                                    .Replace(
+                                        "/",
+                                        Path.DirectorySeparatorChar.ToString()
+                                    )
+                                    .TrimStart(
+                                        Path.DirectorySeparatorChar
+                                    );
+
+                                var fullOldImagePath = Path.Combine(
+                                    _environment.WebRootPath,
+                                    oldImagePath
+                                );
+
+                                if (System.IO.File.Exists(fullOldImagePath))
+                                {
+                                    System.IO.File.Delete(fullOldImagePath);
+                                }
+                            }
+
+                            // ----------------------------------------------------
+                            // SAVE NEW IMAGE
+                            // ----------------------------------------------------
+
+                            var extension =
+                                Path.GetExtension(
+                                    dto.ImageFile.FileName
+                                );
+
+                            var fileName =
+                                $"{Guid.NewGuid()}{extension}";
+
+                            var newFilePath = Path.Combine(
+                                uploadsFolder,
+                                fileName
+                            );
+
+                            await using var stream =
+                                new FileStream(
+                                    newFilePath,
+                                    FileMode.Create
+                                );
+
+                            await dto.ImageFile.CopyToAsync(stream);
+
+                            menuItem.Image =
+                                $"/uploads/menu/{fileName}";
+                        }
+
+                        // ========================================================
+                        // SAVE MENU ITEM
+                        // ========================================================
+
+                        await _context.SaveChangesAsync();
+
+                        // ========================================================
+                        // GET CURRENT VARIANTS
+                        // ========================================================
+
+                        var existingVariants =
+                            await _context.MenuItemVariants
+                                .Where(x =>
+                                    x.MenuItemId == menuItem.Id)
+                                .AsNoTracking()
+                                .ToListAsync();
+
+                        var existingVariantIds =
+                            existingVariants
+                                .Select(x => x.Id)
+                                .ToHashSet();
+
+                        // ========================================================
+                        // INCOMING VARIANTS
+                        // ========================================================
+
+                        var incomingVariants =
+                            dto.Variants ??
+                            new List<MenuItemVariantDto>();
+
+                        // ========================================================
+                        // CHECK DUPLICATE VARIANT IDS
+                        // ========================================================
+
+                        var duplicateVariantIds =
+                            incomingVariants
+                                .Where(x =>
+                                    x.Id.HasValue &&
+                                    x.Id.Value != Guid.Empty)
+                                .GroupBy(x => x.Id!.Value)
+                                .Where(g => g.Count() > 1)
+                                .Select(g => g.Key)
+                                .ToList();
+
+                        if (duplicateVariantIds.Any())
+                        {
+                            result = BadRequest(new
+                            {
+                                success = false,
+                                message =
+                                    "The same variant cannot be submitted more than once.",
+                                variantIds = duplicateVariantIds
+                            });
+
+                            await transaction.RollbackAsync();
+                            return;
+                        }
+
+                        // ========================================================
+                        // VALIDATE VARIANT IDS
+                        // ========================================================
+
+                        foreach (var variantDto in incomingVariants)
+                        {
+                            if (!variantDto.Id.HasValue ||
+                                variantDto.Id.Value == Guid.Empty)
+                            {
+                                continue;
+                            }
+
+                            var variantId = variantDto.Id.Value;
+
+                            // ----------------------------------------------------
+                            // ID doesn't belong to this menu item
+                            // ----------------------------------------------------
+
+                            if (!existingVariantIds.Contains(variantId))
+                            {
+                                var variantExists =
+                                    await _context.MenuItemVariants
+                                        .AsNoTracking()
+                                        .AnyAsync(x =>
+                                            x.Id == variantId);
+
+                                await transaction.RollbackAsync();
+
+                                if (variantExists)
+                                {
+                                    result = BadRequest(new
+                                    {
+                                        success = false,
+                                        message =
+                                            "One of the selected variants does not belong to this menu item.",
+                                        variantId
+                                    });
+                                }
+                                else
+                                {
+                                    result = BadRequest(new
+                                    {
+                                        success = false,
+                                        message =
+                                            "One of the selected variant IDs does not exist.",
+                                        variantId
+                                    });
+                                }
+
+                                return;
+                            }
+                        }
+
+                        // ========================================================
+                        // INCOMING EXISTING VARIANT IDS
+                        // ========================================================
+
+                        var incomingVariantIds =
+                            incomingVariants
+                                .Where(x =>
+                                    x.Id.HasValue &&
+                                    x.Id.Value != Guid.Empty)
+                                .Select(x => x.Id!.Value)
+                                .ToHashSet();
+
+                        // ========================================================
+                        // UPDATE EXISTING / ADD NEW
+                        // ========================================================
+
+                        foreach (var variantDto in incomingVariants)
+                        {
+                            // ====================================================
+                            // UPDATE EXISTING VARIANT
+                            // ====================================================
+
+                            if (variantDto.Id.HasValue &&
+                                variantDto.Id.Value != Guid.Empty)
+                            {
+                                var variantId =
+                                    variantDto.Id.Value;
+
+                                var affectedRows =
+                                    await _context.MenuItemVariants
+                                        .Where(x =>
+                                            x.Id == variantId &&
+                                            x.MenuItemId == menuItem.Id)
+                                        .ExecuteUpdateAsync(setters =>
+                                            setters
+                                                .SetProperty(
+                                                    x => x.Name,
+                                                    variantDto.Name.Trim()
+                                                )
+                                                .SetProperty(
+                                                    x => x.Price,
+                                                    variantDto.Price
+                                                )
+                                                .SetProperty(
+                                                    x => x.DisplayOrder,
+                                                    variantDto.DisplayOrder
+                                                )
+                                                .SetProperty(
+                                                    x => x.IsActive,
+                                                    variantDto.IsActive
+                                                )
+                                        );
+
+                                if (affectedRows == 0)
+                                {
+                                    result = Conflict(new
+                                    {
+                                        success = false,
+                                        message =
+                                            "One of the variants no longer exists. Please reload the menu item and try again.",
+                                        variantId
+                                    });
+
+                                    await transaction.RollbackAsync();
+                                    return;
+                                }
+                            }
+
+                            // ====================================================
+                            // ADD NEW VARIANT
+                            // ====================================================
+
+                            else
+                            {
+                                var newVariant = new MenuItemVariant
+                                {
+                                    Id = Guid.NewGuid(),
+                                    Name =
+                                        variantDto.Name.Trim(),
+
+                                    Price =
+                                        variantDto.Price,
+
+                                    DisplayOrder =
+                                        variantDto.DisplayOrder,
+
+                                    IsActive = true,
+
+                                    MenuItemId =
+                                        menuItem.Id
+                                };
+
+                                await _context.MenuItemVariants
+                                    .AddAsync(newVariant);
+                            }
+                        }
+
+                        // ========================================================
+                        // SAVE NEW VARIANTS
+                        // ========================================================
+
+                        await _context.SaveChangesAsync();
+
+                        // ========================================================
+                        // DELETE REMOVED VARIANTS
+                        // ========================================================
+
+                        var variantIdsToDelete =
+                            existingVariantIds
+                                .Except(incomingVariantIds)
+                                .ToList();
+
+                        if (variantIdsToDelete.Any())
+                        {
+                            await _context.MenuItemVariants
+                                .Where(x =>
+                                    x.MenuItemId == menuItem.Id &&
+                                    variantIdsToDelete.Contains(x.Id))
+                                .ExecuteDeleteAsync();
+                        }
+
+                        // ========================================================
+                        // COMMIT TRANSACTION
+                        // ========================================================
+
+                        await transaction.CommitAsync();
+
+                        result = Ok(new
+                        {
+                            success = true,
+                            message =
+                                "Menu item updated successfully."
+                        });
                     }
-                }
+                    catch
+                    {
+                        await transaction.RollbackAsync();
+                        throw;
+                    }
+                });
 
-                // ========================================================
-                // Save changes
-                // ========================================================
-
-                await _context.SaveChangesAsync();
-
-                return Ok(new
+                return result ?? StatusCode(500, new
                 {
-                    success = true,
-                    message = "Menu item updated successfully."
+                    success = false,
+                    message =
+                        "The update operation did not produce a result."
+                });
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return Conflict(new
+                {
+                    success = false,
+                    message =
+                        "The menu item or one of its variants was modified or deleted by another user. Please reload the menu item and try again."
                 });
             }
             catch (Exception ex)
@@ -582,34 +796,65 @@ namespace PizzastaAdminBackend.Controllers
                     message = "Menu item not found."
                 });
             }
+            // Check for DealItems referencing this menu item. The FK is configured with Restrict
+            // so attempting to delete the MenuItem while DealItems exist will cause a SQL error.
+            var referencingDealItems = await _context.DealItems
+                .Where(d => d.MenuItemId == id)
+                .Select(d => new { d.Id, d.DealId })
+                .ToListAsync();
 
-            _context.MenuItems.Remove(menuItem);
-            if(variants.Count > 0)
+            if (referencingDealItems.Any())
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Cannot delete menu item because it is used in one or more deals.",
+                    // include referencing deal item ids and deal ids so frontend can show context
+                    references = referencingDealItems
+                });
+            }
+
+            // No referencing DealItems -> safe to delete. Delete variants first, then the menu item.
+            if (variants.Count > 0)
             {
                 _context.MenuItemVariants.RemoveRange(variants);
             }
 
-            await _context.SaveChangesAsync();
+            _context.MenuItems.Remove(menuItem);
 
-            var imagePath = menuItem.Image;
-
-            if (!string.IsNullOrWhiteSpace(imagePath))
+            try
             {
-                var fileName = Path.GetFileName(imagePath);
+                await _context.SaveChangesAsync();
 
-                var filePath = Path.Combine(_environment.WebRootPath, "uploads", "menu", fileName);
+                var imagePath = menuItem.Image;
 
-                if (System.IO.File.Exists(filePath))
+                if (!string.IsNullOrWhiteSpace(imagePath))
                 {
-                    System.IO.File.Delete(filePath);
-                }
-            }
+                    var fileName = Path.GetFileName(imagePath);
 
-            return Json(new
+                    var filePath = Path.Combine(_environment.WebRootPath, "uploads", "menu", fileName);
+
+                    if (System.IO.File.Exists(filePath))
+                    {
+                        System.IO.File.Delete(filePath);
+                    }
+                }
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Menu item deleted successfully."
+                });
+            }
+            catch (Exception ex)
             {
-                success = true,
-                message = "Menu item deleted successfully."
-            });
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "Something went wrong while deleting the menu item.",
+                    error = ex.Message
+                });
+            }
         }
     }
 }
