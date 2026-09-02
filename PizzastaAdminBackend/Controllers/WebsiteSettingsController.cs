@@ -28,6 +28,7 @@ namespace PizzastaAdminBackend.Controllers
             return Json(new { success = true, data });
         }
 
+        [Authorize]
         [HttpPost]
         public async Task<IActionResult> AddOrUpdate(WebsiteSettingsDto model)
         {

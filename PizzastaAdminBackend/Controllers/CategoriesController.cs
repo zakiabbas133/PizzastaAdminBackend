@@ -1,13 +1,9 @@
-
-using Azure.Core;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PizzastaAdminBackend.Data;
 using PizzastaAdminBackend.Models;
-using System.Linq.Expressions;
 
-[Authorize]
 public class CategoriesController : Controller
 {
     private readonly ApplicationDbContext _context;
@@ -40,6 +36,7 @@ public class CategoriesController : Controller
         return Json(new { success = true, data = category });
     }
 
+    [Authorize]
     [HttpPost]
     public async Task<IActionResult> UpdateCategoryOrder(string draggedCategoryId, string targetCategoryId, int targetOrder, int draggedOrder)
     {
@@ -83,6 +80,7 @@ public class CategoriesController : Controller
         });
     }
 
+    [Authorize]
     [HttpPost]
     public async Task<IActionResult> Create(Category category, IFormFile? image)
     {
@@ -170,7 +168,8 @@ public class CategoriesController : Controller
             });
         }
     }
-
+    
+    [Authorize]
     [HttpPatch]
     public async Task<IActionResult> Edit(CategoryUpdateRequest request)
     {
@@ -253,6 +252,7 @@ public class CategoriesController : Controller
         });
     }
 
+    [Authorize]
     [HttpPost]
     public async Task<IActionResult> Delete(Guid? id)
     {

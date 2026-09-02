@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PizzastaAdminBackend.Data;
 using PizzastaAdminBackend.DTOs.MenuItems;
@@ -105,6 +106,7 @@ namespace PizzastaAdminBackend.Controllers
             return Ok(menuItem);
         }
 
+        [Authorize]
         [HttpPost]
         public async Task<IActionResult> CreateMenuItem([FromForm] MenuItemDto dto)
         {
@@ -311,10 +313,9 @@ namespace PizzastaAdminBackend.Controllers
             );
         }
 
+        [Authorize]
         [HttpPut]
-        public async Task<IActionResult> UpdateMenuItem(
-    Guid id,
-    [FromForm] MenuItemDto dto)
+        public async Task<IActionResult> UpdateMenuItem(Guid id, [FromForm] MenuItemDto dto)
         {
             if (!ModelState.IsValid)
             {
@@ -781,6 +782,7 @@ namespace PizzastaAdminBackend.Controllers
             }
         }
 
+        [Authorize]
         [HttpDelete]
         public async Task<IActionResult> DeleteMenuItem(Guid id)
         {

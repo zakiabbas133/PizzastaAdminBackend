@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PizzastaAdminBackend.Data;
 using PizzastaAdminBackend.DTOs.Deals;
@@ -108,6 +109,7 @@ namespace PizzastaAdminBackend.Controllers
         // POST: /Deal/AddOrUpdateDeal
         // ============================================================
 
+        [Authorize]
         [HttpPost]
         [RequestSizeLimit(10 * 1024 * 1024)]
         public async Task<IActionResult> AddOrUpdateDeal([FromForm] DealAddOrUpdateDto model)
@@ -721,6 +723,7 @@ namespace PizzastaAdminBackend.Controllers
         // DELETE: /Deal/DeleteDeal/{id}
         // ============================================================
 
+        [Authorize]
         [HttpDelete]
         public async Task<IActionResult> DeleteDeal(Guid id)
         {
@@ -816,8 +819,7 @@ namespace PizzastaAdminBackend.Controllers
         // IMAGE SAVE
         // ============================================================
 
-        private async Task<string> SaveDealImage(
-            IFormFile image)
+        private async Task<string> SaveDealImage(IFormFile image)
         {
             var uploadsFolder = Path.Combine(
                 _environment.WebRootPath,
@@ -859,8 +861,7 @@ namespace PizzastaAdminBackend.Controllers
         // IMAGE DELETE
         // ============================================================
 
-        private void DeleteDealImage(
-            string? imagePath)
+        private void DeleteDealImage(string? imagePath)
         {
             if (string.IsNullOrWhiteSpace(imagePath))
             {
@@ -905,8 +906,7 @@ namespace PizzastaAdminBackend.Controllers
         // MAP DEAL
         // ============================================================
 
-        private static DealResponseDto MapDeal(
-            Deal deal)
+        private static DealResponseDto MapDeal(Deal deal)
         {
             return new DealResponseDto
             {
