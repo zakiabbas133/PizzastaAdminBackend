@@ -1,11 +1,16 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
 
-namespace PizzastaAdminBackend.Models
+namespace PizzastaAdminBackend.DTOs.Locations
 {
-    public class Location
+    public class CoordinatesDto
     {
-        public Guid Id { get; set; }
+        public decimal Lat { get; set; }
+        public decimal Lng { get; set; }
+    }
+
+    public class LocationDto
+    {
+        public Guid? Id { get; set; }
 
         [Required]
         [MaxLength(80)]
@@ -23,12 +28,9 @@ namespace PizzastaAdminBackend.Models
         [MaxLength(30)]
         public string Whatsapp { get; set; } = string.Empty;
 
-        [Range(-90, 90)]
-        public decimal Latitude { get; set; }
-
-        [Range(-180, 180)]
-        public decimal Longitude { get; set; }
-
+        // Expecting 7 items (one per day) but allow any number
         public string OpeningHours { get; set; } = "03:00 PM - 03:00 AM";
+
+        public CoordinatesDto? Coordinates { get; set; }
     }
 }

@@ -29,8 +29,6 @@ namespace PizzastaAdminBackend.Data
 
         public DbSet<Location> Locations { get; set; }
 
-        public DbSet<LocationOpeningHour> LocationOpeningHours { get; set; }
-
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -141,12 +139,6 @@ namespace PizzastaAdminBackend.Data
             // WEBSITE SETTINGS & LOCATION CONFIGURATION
             // ============================================
 
-            modelBuilder.Entity<LocationOpeningHour>()
-                .HasOne(x => x.Location)
-                .WithMany(x => x.OpeningHours)
-                .HasForeignKey(x => x.LocationId)
-                .OnDelete(DeleteBehavior.Cascade);
-
             modelBuilder.Entity<Location>()
                 .Property(x => x.Latitude)
                 .HasPrecision(10, 7);
@@ -154,14 +146,6 @@ namespace PizzastaAdminBackend.Data
             modelBuilder.Entity<Location>()
                 .Property(x => x.Longitude)
                 .HasPrecision(10, 7);
-
-            modelBuilder.Entity<LocationOpeningHour>()
-                .HasIndex(x => new
-                {
-                    x.LocationId,
-                    x.Day
-                })
-                .IsUnique();
         }
     }
 }
