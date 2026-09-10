@@ -126,7 +126,31 @@ namespace PizzastaAdminBackend.Controllers
             }
         }
 
-
+        [Authorize]
+        public async Task<IActionResult> GetAdminInfoOnSignup()
+        {
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new
+                {
+                    success = false,
+                    message = "User is not authenticated.",
+                    adminInfo = new ApplicationUser(),
+                });
+            }
+            var user = await _userManager.GetUserAsync(User);
+            return Ok(new
+            {
+                success = true,
+                message = "Admin info retrieved successfully.",
+                adminInfo = new
+                {
+                    username = User.Identity?.Name ?? string.Empty,
+                    email = User.FindFirstValue(ClaimTypes.Email) ?? string.Empty,
+                    fullName = user?.FullName
+                }
+            });
+        }
         // =========================================================
         // SIGNUP
         // =========================================================

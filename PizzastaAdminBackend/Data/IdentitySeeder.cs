@@ -17,6 +17,7 @@ namespace PizzastaAdminBackend.Data
             const string username = "pastizzaadmin";
             const string email = "pastizzaadmin@pastizza.com";
             const string password = "Pastizzaadmin@123";
+            const string fullName = "Pastizza Admin";
 
             // Check if user already exists
             var existingUser = await userManager.FindByNameAsync(username);
@@ -31,7 +32,8 @@ namespace PizzastaAdminBackend.Data
             {
                 UserName = username,
                 Email = email,
-                EmailConfirmed = true
+                EmailConfirmed = true,
+                FullName = fullName,
             };
 
             var result = await userManager.CreateAsync(user, password);
