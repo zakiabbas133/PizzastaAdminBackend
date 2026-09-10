@@ -143,12 +143,13 @@ namespace PizzastaAdminBackend.Controllers
             {
                 success = true,
                 message = "Admin info retrieved successfully.",
-                adminInfo = new
-                {
-                    username = User.Identity?.Name ?? string.Empty,
-                    email = User.FindFirstValue(ClaimTypes.Email) ?? string.Empty,
-                    fullName = user?.FullName
-                }
+                adminInfo = user
+                //adminInfo = new
+                //{
+                //    username = User.Identity?.Name ?? string.Empty,
+                //    email = User.FindFirstValue(ClaimTypes.Email) ?? string.Empty,
+                //    fullName = user?.FullName
+                //}
             });
         }
         // =========================================================
