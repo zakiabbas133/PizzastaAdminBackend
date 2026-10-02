@@ -26,6 +26,45 @@ namespace PizzastaAdminBackend.Controllers
             _configuration = configuration;
         }
 
+        // =========================================================
+        // CREATE ADMIN
+        // =========================================================
+
+        [HttpPost]
+        public async Task<IActionResult> CreateAdmin()
+        {
+            const string username = "pastizzaadmin";
+            const string email = "pastizzaadmin@pastizza.com";
+            const string password = "Pastizzaadmin@123";
+            const string fullName = "Pastizza Admin";
+
+            var existingUser = await _userManager.FindByNameAsync(username);
+
+            if (existingUser != null)
+                return BadRequest("Admin user already exists.");
+
+            var user = new ApplicationUser
+            {
+                UserName = username,
+                Email = email,
+                FullName = fullName,
+                EmailConfirmed = true
+            };
+
+            var result = await _userManager.CreateAsync(user, password);
+
+            if (!result.Succeeded)
+            {
+                return BadRequest(result.Errors);
+            }
+
+            return Ok(new
+            {
+                message = "Admin user created successfully.",
+                username,
+                email
+            });
+        }
 
         // =========================================================
         // LOGIN

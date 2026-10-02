@@ -29,6 +29,8 @@ namespace PizzastaAdminBackend.Data
 
         public DbSet<Location> Locations { get; set; }
 
+        public DbSet<CustomOrders> CustomOrders { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

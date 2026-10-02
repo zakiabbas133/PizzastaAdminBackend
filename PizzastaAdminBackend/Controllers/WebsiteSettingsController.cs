@@ -22,7 +22,7 @@ namespace PizzastaAdminBackend.Controllers
             var data = _context.WebsiteSettings.FirstOrDefault();
             if(data == null)
             {
-                return Json(new { success = false, data = new WebsiteSettings() });
+                return Json(new { success = false, data = new { } });
             }
             return Json(new { success = true, data });
         }
